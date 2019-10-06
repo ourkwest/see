@@ -6,25 +6,6 @@
     (java.awt.event WindowAdapter)))
 
 
-(defn definition-for [image]
-  {:image image
-   :title "See image"
-   :background-colour (Color. 0 0 0 0)
-   :fps 25
-   :only-draw-when-updated? false})
-
-(defn with-title [see-definition title]
-  (assoc see-definition :title title))
-
-(defn with-background-colour [see-definition background-colour]
-  (assoc see-definition :background-colour background-colour))
-
-(defn with-frames-per-second [see-definition frames-per-second]
-  (assoc see-definition :fps frames-per-second))
-
-(defn with-no-redraws-unless-updated [see-definition]
-  (assoc see-definition :only-draw-when-updated? true))
-
 (defn see
   "See a visual representation of an image in a java.awt Window.
   Returns a function to call when the image has been changed.
@@ -37,11 +18,14 @@
       (s/with-title \"My Image\")
       (s/with-background-colour Color/YELLOW)
       (s/see))"
-  [{:keys [^String title
-           ^Image image
-           ^Color background-colour
-           ^Long fps
-           ^Boolean only-draw-when-updated?]}]
+  [^Image image & {:keys [^String title
+                          ^Color background-colour
+                          ^Long fps
+                          ^Boolean only-draw-when-updated?]
+                   :or {title "See!"
+                        background-colour (Color. 0 0 0 0)
+                        fps 25
+                        only-draw-when-updated? false}}]
   (let [frame ^JFrame (proxy [JFrame] []
                         (paint [^Graphics graphics]
                           (let [insets (-> this .getInsets)
