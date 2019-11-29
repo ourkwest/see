@@ -3,7 +3,7 @@
     (javax.swing WindowConstants JFrame)
     (java.awt Dimension Graphics Image Color Graphics2D)
     (java.util.concurrent Executors TimeUnit)
-    (java.awt.event WindowAdapter)))
+    (java.awt.event WindowAdapter KeyAdapter KeyEvent)))
 
 
 (defn see
@@ -21,7 +21,8 @@
   [^Image image & {:keys [^String title
                           ^Color background-colour
                           ^Long fps
-                          ^Boolean only-draw-when-updated?]
+                          ^Boolean only-draw-when-updated?
+                          key-handler-fn]
                    :or {title "See!"
                         background-colour (Color. 0 0 0 0)
                         fps 25
@@ -30,13 +31,17 @@
                         (paint [^Graphics graphics]
                           (let [insets (-> this .getInsets)
                                 container (-> this .getContentPane)]
-                            (.setBackground ^Graphics2D graphics background-colour)
-                            (.clearRect graphics
+                            #_(.setBackground ^Graphics2D graphics background-colour)
+                            #_(.clearRect graphics
                                         (.left insets) (.top insets)
                                         (.getWidth container) (.getHeight container))
                             (.drawImage graphics image (.left insets) (.top insets) this))))
         changed? (volatile! true)
         executor (Executors/newSingleThreadScheduledExecutor)]
+    (when key-handler-fn
+      (.addKeyListener frame (proxy [KeyAdapter] []
+                               (keyPressed [^KeyEvent ke]
+                                 (key-handler-fn (.getKeyCode ke))))))
     (.scheduleAtFixedRate executor
                           #(when (or @changed? (not only-draw-when-updated?))
                              (vreset! changed? false)
