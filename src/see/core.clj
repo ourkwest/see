@@ -3,7 +3,8 @@
     (javax.swing WindowConstants JFrame)
     (java.awt Dimension Graphics Image Color Graphics2D)
     (java.util.concurrent Executors TimeUnit)
-    (java.awt.event WindowAdapter KeyAdapter KeyEvent)))
+    (java.awt.event WindowAdapter KeyAdapter KeyEvent)
+    [java.awt.image BufferedImage]))
 
 
 (defn see
@@ -27,15 +28,18 @@
                         background-colour (Color. 0 0 0 0)
                         fps 25
                         only-draw-when-updated? false}}]
-  (let [frame ^JFrame (proxy [JFrame] []
+  (let [width (.getWidth image nil)
+        height (.getHeight image nil)
+        buffer (BufferedImage. width height BufferedImage/TYPE_INT_ARGB)
+        frame ^JFrame (proxy [JFrame] []
                         (paint [^Graphics graphics]
                           (let [insets (-> this .getInsets)
                                 container (-> this .getContentPane)]
                             #_(.setBackground ^Graphics2D graphics background-colour)
                             #_(.clearRect graphics
-                                        (.left insets) (.top insets)
-                                        (.getWidth container) (.getHeight container))
-                            (.drawImage graphics image (.left insets) (.top insets) this))))
+                                          (.left insets) (.top insets)
+                                          (.getWidth container) (.getHeight container))
+                            (.drawImage graphics buffer (.left insets) (.top insets) this))))
         changed? (volatile! true)
         executor (Executors/newSingleThreadScheduledExecutor)]
     (when key-handler-fn
@@ -49,13 +53,13 @@
                           0 (long (/ 1000 fps)) TimeUnit/MILLISECONDS)
     (doto frame
       (.setTitle title)
-      (-> .getContentPane (.setPreferredSize
-                            (Dimension. (.getWidth image nil)
-                                        (.getHeight image nil))))
+      (-> .getContentPane (.setPreferredSize (Dimension. width height)))
       (.setDefaultCloseOperation WindowConstants/DISPOSE_ON_CLOSE)
       (.addWindowListener (proxy [WindowAdapter] []
                             (windowClosed [_window-event]
                               (.shutdown executor))))
       (.pack)
       (.setVisible true))
-    #(vreset! changed? true)))
+    (fn []
+      (.drawImage (.getGraphics buffer) image 0 0 nil)
+      (vreset! changed? true))))
